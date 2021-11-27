@@ -23,7 +23,7 @@ from dash.dependencies import Input, Output, State
 CROP_IMG_PATH = 'assets/images/'
 DATA_PATH = 'Crop_Soil_Dataset.csv'
 TRAINED_MODEL_PATH = 'Voting_Based_Model_Crop_Prediction_final.sav'
-SCALAR_MODEL_PATH = 'scaler.sav'
+COLUMN_TRANSFORMER_PATH = 'colum_transformer.sav'
 ENCODER_MODEL_PATH = 'label_encoder.sav'
 
 crop_img_files = [os.path.join(CROP_IMG_PATH, f) for f in os.listdir(CROP_IMG_PATH)]
@@ -36,10 +36,13 @@ def model_inference(feature_arr):
         return prediction
 
 
-def scalar_inference(user_input):
-    scale_model = pickle.load(open(SCALAR_MODEL_PATH, 'rb'))
-    scaled_input = scale_model.transform(user_input)
-    return scaled_input
+def columntransformer_inference(user_input):
+    transformer_model = pickle.load(open(COLUMN_TRANSFORMER_PATH, 'rb'))
+    print(transformer_model)
+    print(user_input)
+    transformed_input = transformer_model.transform(user_input)
+    print(transformed_input)
+    return transformed_input
 
 
 def get_crop_name(pred_int):
@@ -74,10 +77,10 @@ def bi_fig(df):
     fig.add_trace(go.Box(x=df['label'], y=df['K'], visible=False))
     fig.add_trace(go.Box(x=df['label'], y=df['P'], visible=False))
     fig.add_trace(go.Box(x=df['label'], y=df['ph'], visible=False))
-    fig.add_trace(go.Box(x=df['label'], y=df['soil'], visible=False))
     fig.add_trace(go.Box(x=df['label'], y=df['temperature'], visible=False))
     fig.add_trace(go.Box(x=df['label'], y=df['humidity'], visible=False))
     fig.add_trace(go.Box(x=df['label'], y=df['rainfall'], visible=False))
+    fig.add_trace(go.Box(x=df['label'], y=df['soil'], visible=False))
 
     # Add Buttons:
     fig.update_layout(
@@ -106,11 +109,6 @@ def bi_fig(df):
                          args=[{'visible': [False, False, False, True, False, False, False, False]},
                                {'title': 'Soil Properties - pH'}]),
 
-                    dict(label='soil',
-                         method='update',
-                         args=[{'visible': [False, False, False, False, True, False, False, False]},
-                               {'title': 'Soil Properties - soil'}]),
-
                     dict(label='Temperature',
                          method='update',
                          args=[{'visible': [False, False, False, False, False, True, False, False]},
@@ -125,6 +123,11 @@ def bi_fig(df):
                          method='update',
                          args=[{'visible': [False, False, False, False, False, False, False, True]},
                                {'title': 'Climate Properties - Rainfall'}]),
+
+                    dict(label='Soil',
+                         method='update',
+                         args=[{'visible': [False, False, False, False, False, False, False, True]},
+                               {'title': 'Soil Properties - soil Types'}]),           
 
                 ]),
             )
@@ -192,10 +195,10 @@ def uni_fig(df):
                          args=[{'visible': [False, False, False, False, False, False, True, False]},
                                {'title': 'Rainfall'}]),
 
-                    dict(label='soil',
+                    dict(label='Soil',
                          method='update',
                          args=[{'visible': [False, False, False, False, False, False, False, True]},
-                               {'title': 'soil'}]),
+                               {'title': 'Soil'}]),           
 
                 ]),
             )
@@ -284,11 +287,11 @@ app.layout = html.Div(children=[
                                   dcc.Dropdown(id="soil",
                                                placeholder='Select soil type...',
                                                options=[
-                                                   {'label': 'Black', 'value': 0},
-                                                   {'label': 'Clayey', 'value': 1},
-                                                   {'label': 'Loamy', 'value': 2},
-                                                   {'label': 'Red', 'value': 3},
-                                                   {'label': 'Sandy', 'value': 4}],
+                                                   {'label': 'Black', 'value': 'black'},
+                                                   {'label': 'Clayey', 'value': 'clayey'},
+                                                   {'label': 'Loamy', 'value': 'loamy'},
+                                                   {'label': 'Red', 'value': 'red'},
+                                                   {'label': 'Sandy', 'value': 'sandy'}],
                                                style={'width': '400px'}
                                                )]),
                               html.Br(), html.Br(),
@@ -381,6 +384,7 @@ def dropdown_options(drop_value):
                Input("soil", "value")])
 def store_inputs(N, P, K, temp, hum, ph, rain, soil):
     features_str = [N, P, K, temp, hum, ph, rain, soil]
+    print(features_str)
     if len(features_str) == 8 and None not in features_str and '' not in features_str:
         return {'N': N, 'P': P, 'K': K, 'temp': temp, 'hum': hum, 'ph': ph, 'rain': rain, 'soil': soil}
 
@@ -390,6 +394,9 @@ def store_inputs(N, P, K, temp, hum, ph, rain, soil):
               Input('submit_button', 'n_clicks'),
               State('store_inputs', 'data'))
 def update_crop_name(click, stored_inputs):
+    cat_vars = ["soil"]
+    num_vars = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
+
     trigger = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if stored_inputs is not None:
         N = float(stored_inputs['N'])
@@ -399,12 +406,17 @@ def update_crop_name(click, stored_inputs):
         hum = float(stored_inputs['hum'])
         ph = float(stored_inputs['ph'])
         rain = float(stored_inputs['rain'])
-        soil = float(stored_inputs['soil'])
+        soil = stored_inputs['soil']
 
-        scaled_input = scalar_inference(np.array([[N, P, K, temp, hum, ph, rain, soil]]))
-        print(scaled_input)
+        tobeprocessed_input = np.array([[N, P, K, temp, hum, ph, rain, soil]])
+        print(tobeprocessed_input)
+        tobeprocessed_input = pd.DataFrame(tobeprocessed_input, columns=num_vars + cat_vars)
+        print(tobeprocessed_input)
 
-        prediction = model_inference(scaled_input)
+        processed_input = columntransformer_inference(tobeprocessed_input)
+        print(processed_input)        
+
+        prediction = model_inference(processed_input)
         predicted_crop_name = get_crop_name(prediction)[0]
 
         crop_img_file = get_img_file(predicted_crop_name)

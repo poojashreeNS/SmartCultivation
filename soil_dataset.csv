@@ -3,6 +3,10 @@ rice,loamy
 rice,clayey
 maize,loamy
 maize,clayey
+chickpea,sandy
+chickpea,loamy
+chickpea,black
+chickpea,clayey
 kidneybeans,sandy
 kidneybeans,loamy
 kidneybeans,clayey
@@ -18,9 +22,12 @@ pomegranate,loamy
 banana,loamy
 mango,sandy
 mango,loamy
+grapes,sandy
+grapes,loamy
 watermelon,sandy
 watermelon,loamy
 muskmelon,sandy
+apple,loamy
 orange,loamy
 papaya,sandy
 papaya,loamy
