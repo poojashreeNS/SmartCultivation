@@ -3,8 +3,8 @@
 
     @authors :
         Poojashree.NS : poojashree.ns@sjsu.edu
-
-
+        Abraham Kong : Abraham.JKong@gmail.com
+        Nisha Mohan Devadiga : nishamohan.devadiga@sjsu.edu
 '''
 import os
 import dash
