@@ -21,7 +21,7 @@ from dash.dependencies import Input, Output, State
 
 
 CROP_IMG_PATH = 'assets/images/'
-DATA_PATH = 'Crop_Prediction_Dataset.csv'
+DATA_PATH = 'Crop_Soil_Dataset.csv'
 TRAINED_MODEL_PATH = 'Voting_Based_Model_Crop_Prediction_final.sav'
 SCALAR_MODEL_PATH = 'scaler.sav'
 ENCODER_MODEL_PATH = 'label_encoder.sav'
